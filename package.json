@@ -1,0 +1,16 @@
+{
+    "name": "holo-cdn",
+    "version": "1.0.0",
+    "description": "Resolver for Holo requests",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Matthew Brisebois <matthew.brisebois@holo.host>",
+    "contributors": [
+        "Paul B. Hartzog <paul.hartzog@holo.host>"
+    ],
+    "license": "MIT",
+    "dependencies": {
+    }
+}

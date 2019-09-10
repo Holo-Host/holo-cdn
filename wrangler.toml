@@ -1,7 +1,7 @@
 # wrangler.toml
 
 # The name of your Workers application
-name = "holo-cache"
+name = "holo-cdn"
 
 # Your Cloudflare account ID
 account_id = "18ff2b4e6205b938652998cfca0d8cff"
