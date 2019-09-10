@@ -1,16 +1,39 @@
 {
-    "name": "holo-cdn",
-    "version": "1.0.0",
-    "description": "Resolver for Holo requests",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "author": "Matthew Brisebois <matthew.brisebois@holo.host>",
-    "contributors": [
-        "Paul B. Hartzog <paul.hartzog@holo.host>"
-    ],
-    "license": "MIT",
-    "dependencies": {
-    }
+  "name": "holo-cdn",
+  "version": "1.0.0",
+  "description": "Static asset resolver",
+  "main": "dist/worker.js",
+  "scripts": {
+    "test": "mocha --recursive ./tests/",
+    "test:unit": "mocha ./tests/unit",
+    "build": "webpack --mode production --output-filename worker.js"
+  },
+  "contributors": [
+    "Paul B. Hartzog <paul.hartzog@holo.host>",
+    "Matthew Brisebois <matthew.brisebois@holo.host>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@holo-host/service-worker-logger": "^0.1.0"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Holo-Host/holo-cdn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Holo-Host/holo-cdn/issues"
+  },
+  "homepage": "https://github.com/Holo-Host/holo-cdn#readme",
+  "devDependencies": {
+    "@dollarshaveclub/cloudworker": "^0.1.1",
+    "@whi/stdlog": "^0.3.0",
+    "axios": "^0.19.0",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0",
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.8"
+  }
 }
