@@ -25,5 +25,5 @@ binding = "DNS2HASH"
 id = "52f042f097ef447c94dc7f0009c70e19"
 
 [[kv-namespaces]]
-binding = "HASH2TRANCHE"
-id = "f8f2d4bcf1414bf2ae048f027104036c"
+binding = "HASH2CDN"
+id = "a117291ccd14434581f8ec26ba02fd5a"
