@@ -107,30 +107,23 @@ describe("Worker Test", function() {
 	expect( headers.get("Access-Control-Max-Age")		).to.be.a('string');
     })
 
-    // it('send post data in urlencoded form', async function () {
-    // 	let req				= new Request('https://worker.example.com/', {
-    // 	    "method": "POST",
-    // 	    "body": JSON.stringify({
-    // 		"url": domain,
-    // 	    }),
-    // 	    "headers": {
-    // 		"Content-Type": "application/x-www-form-urlencoded",
-    // 	    },
-    // 	});
-    // 	log.silly("%s", req );
+    it('should fail with 405 when method is not GET', async function () {
+    	let req				= new Request('https://worker.example.com/', {
+    	    "method": "POST",
+    	});
+    	log.silly("Request: %s", req );
 	
-    // 	let resp			= await handleRequest( req );
-    // 	log.debug("%s", resp );
-    // 	let body			= await resp.json();
+    	let resp			= await handleRequest( req );
+    	log.debug("Response: %s", resp );
+    	let body			= await resp.json();
+    	log.debug("Body: %s", body );
 	
-    // 	expect( body ).deep.equal({
-    // 	    "hash": hash,
-    // 	    "hosts": host_list,
-    // 	    "requestURL": domain,
-    // 	});
-    // })
+	expect( resp.status	).equal( 405 );
+	expect( body.error	).equal( "Method Not Allowed" );
+	expect( body.message	).to.be.a('string');
+    })
 
-    // it('Send empty url', async function () {
+    // it('should send GET / request and recieve HTML', async function () {
     // 	let req				= new Request('https://worker.example.com/', {
     // 	    "method": "POST",
     // 	    "body": JSON.stringify({
