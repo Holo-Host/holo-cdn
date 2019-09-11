@@ -180,9 +180,9 @@ describe("Worker Test", function() {
     });
 
     it('should send GET / request and recieve HTML', async function () {
-	const html			= `<h1>Hello World</h1>`;
+	const html			= `<h1>Hello World!</h1>`;
 	
-	axios_mock.onGet('/').reply( 200, html );
+	axios_mock.onGet(/.*\.holohost\.net\//).reply( 200, html );
 	
 	let req				= new Request('https://worker.example.com/', {
 	    "headers": {
@@ -198,6 +198,24 @@ describe("Worker Test", function() {
 	
 	expect( resp.status	).equal( 200 );
 	expect( body		).equal( html );
+    });
+
+    it('should fail because domain is not registered', async function () {
+	let req				= new Request('https://worker.example.com/', {
+	    "headers": {
+		"Host": "unregistered.example.com",
+	    },
+	});
+	log.silly("%s", req );
+	
+	let resp			= await handleRequest( req );
+	log.debug("Response: %s", resp );
+	let body			= await resp.json();
+	log.debug("Body: %s", body );
+	
+	expect( resp.status	).equal( 404 );
+	expect( body.error	).equal( "Resource Not Found" );
+	expect( body.message	).to.be.a('string');
     });
 
 });

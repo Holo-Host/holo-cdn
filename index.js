@@ -132,8 +132,33 @@ async function handleRequest ( request ) {
 	    "message": "Host header is: " + String(err),
 	}, 400 );
     }
+
+
+    const host_url		= new URL( "http://" + host );
+    const hostname		= host_url.hostname;
+    const happ_id		= await DNS2HASH.get( hostname );
+
+    if ( happ_id === null ) {
+	return json_response({
+	    "error": "Resource Not Found",
+	    "message": "There is no hApp registered for host '" + hostname + "'",
+	}, 404 );
+    }
+
+    const tranche		= await HASH2CDN.get( happ_id, "json" );
+
+    if ( tranche === null ) {
+	return json_response({
+	    "error": "Resource Not Found",
+	    "message": "There is no tranche for hApp ID '" + happ_id + "'",
+	}, 404 );
+    }
+
+    const random_node_domain	= tranche[ Math.floor(Math.random() * tranche.length) ];
+    const static_asset_url	= random_node_domain + path;
     
-    const response		= await axios.get('/');
+    log.info("Axios GET %s", static_asset_url );
+    const response		= await axios.get( static_asset_url );
 
     log.debug("HTML response: %s\n%s", response.status, response.data );
 
