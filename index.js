@@ -1,5 +1,6 @@
 
 import { logging }	from '@holo-host/service-worker-logger';
+import axios		from 'axios';
 
 const log		= logging.getLogger('static-assets');
 log.setLevel('error');
@@ -16,6 +17,18 @@ function json_response ( data, status=200, header=null ) {
 	    "status": status,
 	    "headers": {
 		"Content-Type": "application/json",
+	    },
+	}),
+    );
+}
+
+function html_response ( html, status=200, header=null ) {
+    return new Response(
+	html,
+	Object.assign( header || {}, {
+	    "status": status,
+	    "headers": {
+		"Content-Type": "text/html; charset=utf-8",
 	    },
 	}),
     );
@@ -59,12 +72,13 @@ function json_response ( data, status=200, header=null ) {
  * @param {Request} request
  */
 async function handleRequest ( request ) {
-    log.info('Got request %s', request );
-
     const method		= request.method;
+    const path			= request.path;
     const headers		= request.headers;
     const origin		= headers.get('origin');
     const referer		= headers.get('referer');
+
+    log.info('Got request %s %s with %s headers from origin %s', method, path, headers.length, origin );
 
     if ( origin						!== null &&
 	 headers.get("access-control-request-method")	!== null &&
@@ -86,6 +100,13 @@ async function handleRequest ( request ) {
 	    "message": "Only the GET method is supported for static assets",
 	}, 405 );
     }
+    else {
+	const response		= await axios.get('/');
+
+	log.debug("HTML response: %s\n%s", response.status, response.data );
+
+	return html_response( response.data );
+    }
     
     return json_response({
 	"error": "Bad Request",
@@ -96,4 +117,5 @@ async function handleRequest ( request ) {
 export {
     log,
     handleRequest,
+    axios,
 };

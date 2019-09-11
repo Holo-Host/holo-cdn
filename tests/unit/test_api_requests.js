@@ -6,6 +6,7 @@ const log				= require('@whi/stdlog')(path.basename( __filename ), {
 const fs				= require('fs');
 const expect				= require('chai').expect;
 const axios				= require('axios');
+const axios_mock_adapter		= require('axios-mock-adapter');
 const Cloudworker			= require('@dollarshaveclub/cloudworker');
 const { Response }			= Cloudworker;
       
@@ -17,6 +18,8 @@ const host_list				= [
     "made_up_host_agent_id_for_test.holohost.net",
 ];
 
+
+let axios_mock;
 
 async function setup_for_cloudworker () {
     const bindings			= {
@@ -40,6 +43,9 @@ async function setup_for_cloudworker () {
     Object.assign( global, Object.fromEntries( methods.map(n => [n, cw[n]]) ));
 
     cw.log.setLevel( process.env.WORKER_DEBUG_LEVEL || 'error' );
+
+    log.debug("Context.axios is type %s", typeof cw.axios );
+    axios_mock				= new axios_mock_adapter( cw.axios );
     
     await DNS2HASH.put( domain, hash );
     await HASH2CDN.put( hash, JSON.stringify( host_list ) );
@@ -123,45 +129,21 @@ describe("Worker Test", function() {
 	expect( body.message	).to.be.a('string');
     })
 
-    // it('should send GET / request and recieve HTML', async function () {
-    // 	let req				= new Request('https://worker.example.com/', {
-    // 	    "method": "POST",
-    // 	    "body": JSON.stringify({
-    // 		"url": "",
-    // 	    }),
-    // 	    "headers": {
-    // 		"Content-Type": "application/x-www-form-urlencoded",
-    // 	    },
-    // 	});
-    // 	log.silly("%s", req );
+    it('should send GET / request and recieve HTML', async function () {
+    	const html			= `<h1>Hello World</h1>`;
 	
-    // 	let resp			= await handleRequest( req );
-    // 	log.debug("%s", resp );
-    // 	let body			= await resp.json();
-
-    // 	expect( resp.status ).equal( 400 );
-    // 	expect( body.error ).equal( "Missing required input" );
-    // });
-
-    // it('send post data in JSON form', async function () {
-    // 	let req				= new Request('https://worker.example.com/', {
-    // 	    "method": "POST",
-    // 	    "body": JSON.stringify({
-    // 		"url": domain,
-    // 	    }),
-    // 	    "headers": {
-    // 		"Content-Type": "application/json",
-    // 	    },
-    // 	});
+    	axios_mock.onGet('/').reply( 200, html );
 	
-    // 	let resp			= await handleRequest( req );
-    // 	let body			= await resp.json();
+    	let req				= new Request('https://worker.example.com/');
+    	log.silly("%s", req );
 	
-    // 	assert.deepEqual( body, {
-    // 	    "hash": hash,
-    // 	    "hosts": host_list,
-    // 	    "requestURL": domain,
-    // 	});
-    // })
+    	let resp			= await handleRequest( req );
+    	log.debug("Response: %s", resp );
+    	let body			= await resp.text();
+    	log.debug("Body: %s", body );
+	
+    	expect( resp.status	).equal( 200 );
+    	expect( body		).equal( html );
+    });
 
 });
