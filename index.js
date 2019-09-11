@@ -6,9 +6,6 @@ const log		= logging.getLogger('static-assets');
 log.setLevel('error');
 
 
-addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event.request))
-})
 
 function json_response ( data, status=200, header=null ) {
     return new Response(
@@ -33,6 +30,20 @@ function html_response ( html, status=200, header=null ) {
 	}),
     );
 }
+
+
+
+addEventListener('fetch', event => {
+    try {
+	const res		= handleRequest( event.request );
+	event.respondWith( res );
+    } catch ( err ) {
+	event.respondWith( json_response({
+	    "error": "Internal Server Error",
+	    "message": String(err),
+	}, 500) );
+    }
+})
 
 
 //
@@ -73,12 +84,16 @@ function html_response ( html, status=200, header=null ) {
  */
 async function handleRequest ( request ) {
     const method		= request.method;
-    const path			= request.path;
     const headers		= request.headers;
+    
+    const host			= headers.get('host');
     const origin		= headers.get('origin');
     const referer		= headers.get('referer');
+    
+    const url			= new URL( request.url );
+    const path			= url.pathname;
 
-    log.info('Got request %s %s with %s headers from origin %s', method, path, headers.length, origin );
+    log.info('Got request %s %s from origin %s', method, path, origin );
 
     if ( origin						!== null &&
 	 headers.get("access-control-request-method")	!== null &&
@@ -100,13 +115,29 @@ async function handleRequest ( request ) {
 	    "message": "Only the GET method is supported for static assets",
 	}, 405 );
     }
-    else {
-	const response		= await axios.get('/');
-
-	log.debug("HTML response: %s\n%s", response.status, response.data );
-
-	return html_response( response.data );
+    else if ( host === null ) {
+	return json_response({
+	    "error": "Bad Request",
+	    "message": "Host header is missing.  Required for hApp ID lookup",
+	}, 400 );
     }
+
+    try {
+	// Valid host check
+	if ( (new URL( "http://" + host )).host !== host )
+	    throw new Error("Host header is a valid URL but an invalid host: " + host );
+    } catch ( err ) {
+	return json_response({
+	    "error": "Bad Request",
+	    "message": "Host header is: " + String(err),
+	}, 400 );
+    }
+    
+    const response		= await axios.get('/');
+
+    log.debug("HTML response: %s\n%s", response.status, response.data );
+
+    return html_response( response.data );
     
     return json_response({
 	"error": "Bad Request",

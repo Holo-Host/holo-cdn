@@ -114,36 +114,90 @@ describe("Worker Test", function() {
     })
 
     it('should fail with 405 when method is not GET', async function () {
-    	let req				= new Request('https://worker.example.com/', {
-    	    "method": "POST",
-    	});
-    	log.silly("Request: %s", req );
+	let req				= new Request('https://worker.example.com/', {
+	    "method": "POST",
+	});
+	log.silly("Request: %s", req );
 	
-    	let resp			= await handleRequest( req );
-    	log.debug("Response: %s", resp );
-    	let body			= await resp.json();
-    	log.debug("Body: %s", body );
+	let resp			= await handleRequest( req );
+	log.debug("Response: %s", resp );
+	let body			= await resp.json();
+	log.debug("Body: %s", body );
 	
 	expect( resp.status	).equal( 405 );
 	expect( body.error	).equal( "Method Not Allowed" );
 	expect( body.message	).to.be.a('string');
     })
 
+    it('should fail on missing Host header', async function () {
+	let req				= new Request('https://worker.example.com/');
+	log.silly("%s", req );
+	
+	let resp			= await handleRequest( req );
+	log.debug("Response: %s", resp );
+	let body			= await resp.json();
+	log.debug("Body: %s", body );
+	
+	expect( resp.status	).equal( 400 );
+	expect( body.error	).equal( "Bad Request" );
+	expect( body.message	).to.be.a('string');
+    });
+
+    it('should fail on invalid Host header', async function () {
+	let req				= new Request('https://worker.example.com/', {
+	    "headers": {
+		"Host": "invalid host header",
+	    },
+	});
+	log.silly("%s", req );
+	
+	let resp			= await handleRequest( req );
+	log.debug("Response: %s", resp );
+	let body			= await resp.json();
+	log.debug("Body: %s", body );
+	
+	expect( resp.status	).equal( 400 );
+	expect( body.error	).equal( "Bad Request" );
+	expect( body.message	).to.be.a('string');
+
+	{
+	    let req			= new Request('https://worker.example.com/', {
+		"headers": {
+		    "Host": "invalid.host.header/alskdf",
+		},
+	    });
+	    log.silly("%s", req );
+	    
+	    let resp			= await handleRequest( req );
+	    log.debug("Response: %s", resp );
+	    let body			= await resp.json();
+	    log.debug("Body: %s", body );
+	    
+	    expect( resp.status		).equal( 400 );
+	    expect( body.error		).equal( "Bad Request" );
+	    expect( body.message	).to.be.a('string');
+	}
+    });
+
     it('should send GET / request and recieve HTML', async function () {
-    	const html			= `<h1>Hello World</h1>`;
+	const html			= `<h1>Hello World</h1>`;
 	
-    	axios_mock.onGet('/').reply( 200, html );
+	axios_mock.onGet('/').reply( 200, html );
 	
-    	let req				= new Request('https://worker.example.com/');
-    	log.silly("%s", req );
+	let req				= new Request('https://worker.example.com/', {
+	    "headers": {
+		"Host": "example.com",
+	    },
+	});
+	log.silly("%s", req );
 	
-    	let resp			= await handleRequest( req );
-    	log.debug("Response: %s", resp );
-    	let body			= await resp.text();
-    	log.debug("Body: %s", body );
+	let resp			= await handleRequest( req );
+	log.debug("Response: %s", resp );
+	let body			= await resp.text();
+	log.debug("Body: %s", body );
 	
-    	expect( resp.status	).equal( 200 );
-    	expect( body		).equal( html );
+	expect( resp.status	).equal( 200 );
+	expect( body		).equal( html );
     });
 
 });
