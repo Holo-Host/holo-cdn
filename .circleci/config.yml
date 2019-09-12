@@ -1,0 +1,57 @@
+version: 2.1
+
+commands:
+  test-nodejs:
+    steps:
+      - run:
+          name: Versions
+          command: npm version
+      - checkout
+      - restore_cache:
+          keys:
+            - v{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ arch }}-npm-cache-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - v{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ arch }}-npm-cache-master-{{ .Environment.CIRCLE_JOB }}
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Webpack build
+          command: npm run build
+      - run:
+          name: Test via Dollar Shave Club Cloudworker
+          command: npm test
+      - run:
+          name: Test via Wrangler deployed workers
+          command: |
+            cp wrangler-ci.toml wrangler.toml
+            echo "Deploy dist/worker.js to http://cdn-ci.holohost.net"
+            npx wrangler publish --release \
+              || ( echo "Failed to deploy Cloudflare worker"; exit 1 )
+            echo "Lookup example.com mapping via http://cdn-ci.holohost.net"
+            result=$( curl --verbose --retry 6 --retry-max-time 60 --fail -X GET \
+                 "http://cdn-ci.holohost.net" ) \
+              || ( echo "Failed to resolve example.com -> hosts mapping"; exit 1 )
+            echo "Successfully discovered example.com -> hosts mapping: $result"
+      - run:
+          name: Test against deployed worker
+          command: npm run test:live
+
+      - save-npm-cache
+  save-npm-cache:
+    steps:
+      - save_cache:
+          key: v{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ arch }}-npm-cache-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm/_cacache
+
+jobs:
+  node-v12:
+    docker:
+      - image: node:12
+    steps:
+      - test-nodejs
+
+workflows:
+  node-multi-build:
+    jobs:
+      - node-v12

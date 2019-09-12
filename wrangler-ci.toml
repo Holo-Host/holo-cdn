@@ -1,0 +1,33 @@
+# wrangler-ci.toml
+#
+# An interim wrangler.toml to use for CI tessting, until we dynamically
+# creaate the KV stores and route uniquely for each CI test invocation.
+
+
+# The name of your Workers application
+name = "cdn-ci"
+
+# Your Cloudflare account ID
+account_id = "18ff2b4e6205b938652998cfca0d8cff"
+
+# Your Cloudflare zone ID
+zone_id = "88b74327b34a5c07ebea8b37b548acf6"
+
+# The route pattern your Workers application will be served at
+route = "cdn-ci.holohost.net"
+
+# The kind of application you're deploying to Cloudflare
+type = "javascript"
+
+# To disable publishing to your workers.dev subdomain,
+# set private = true in your wrangler.toml
+private = true
+
+## kv namespace bindings
+[[kv-namespaces]]
+binding = "DNS2HASH"
+id = "52f042f097ef447c94dc7f0009c70e19"
+
+[[kv-namespaces]]
+binding = "HASH2CDN"
+id = "a117291ccd14434581f8ec26ba02fd5a"
