@@ -1,6 +1,5 @@
 
 import { logging }	from '@holo-host/service-worker-logger';
-import axios		from 'axios';
 
 const log		= logging.getLogger('static-assets');
 log.setLevel('error');
@@ -14,18 +13,6 @@ function json_response ( data, status=200, header=null ) {
 	    "status": status,
 	    "headers": {
 		"Content-Type": "application/json",
-	    },
-	}),
-    );
-}
-
-function html_response ( html, status=200, header=null ) {
-    return new Response(
-	html,
-	Object.assign( header || {}, {
-	    "status": status,
-	    "headers": {
-		"Content-Type": "text/html; charset=utf-8",
 	    },
 	}),
     );
@@ -141,7 +128,7 @@ async function handleRequest ( request ) {
     if ( happ_id === null ) {
 	return json_response({
 	    "error": "Resource Not Found",
-	    "message": "There is no hApp registered for host '" + hostname + "'",
+	    "message": "There is no hApp registered for host '" + host + "'",
 	}, 404 );
     }
 
@@ -155,23 +142,13 @@ async function handleRequest ( request ) {
     }
 
     const random_node_domain	= tranche[ Math.floor(Math.random() * tranche.length) ];
-    const static_asset_url	= random_node_domain + path;
+    const static_asset_url	= "http://" + random_node_domain + path;
     
-    log.info("Axios GET %s", static_asset_url );
-    const response		= await axios.get( static_asset_url );
-
-    log.debug("HTML response: %s\n%s", response.status, response.data );
-
-    return html_response( response.data );
-    
-    return json_response({
-	"error": "Bad Request",
-	"message": "We don't know what you want.  Try following the API documentation...",
-    }, 400 );
+    log.info("Fetch GET %s", static_asset_url );
+    return await fetch( static_asset_url );
 }
 
 export {
     log,
     handleRequest,
-    axios,
 };

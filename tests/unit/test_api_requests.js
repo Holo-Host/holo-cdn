@@ -6,20 +6,19 @@ const log				= require('@whi/stdlog')(path.basename( __filename ), {
 const fs				= require('fs');
 const expect				= require('chai').expect;
 const axios				= require('axios');
-const axios_mock_adapter		= require('axios-mock-adapter');
+const fetchMock				= require('fetch-mock');
 const Cloudworker			= require('@dollarshaveclub/cloudworker');
 const { Response }			= Cloudworker;
       
 const worker_code			= fs.readFileSync('./dist/worker.js', 'utf8');
 
-const domain				= "example.com";
+const domain				= "holo-cdn-test.holohost.net";
 const hash				= "made_up_happ_hash_for_test";
 const host_list				= [
     "made_up_host_agent_id_for_test.holohost.net",
 ];
 
-
-let axios_mock;
+const mock_fetch			= fetchMock.sandbox();
 
 async function setup_for_cloudworker () {
     const bindings			= {
@@ -32,20 +31,17 @@ async function setup_for_cloudworker () {
 	// Key value store for getting a list of hosts by hApp hash
 	//
 	"HASH2CDN": new Cloudworker.KeyValueStore(),
+	"fetch": mock_fetch,
     };
 
     const cw				= (new Cloudworker( worker_code, { bindings } )).context;
-
+    cw.log.setLevel( process.env.WORKER_DEBUG_LEVEL || 'error' );
+    
     const methods			= [
 	"handleRequest", "Request", "DNS2HASH", "HASH2CDN",
     ];
 
     Object.assign( global, Object.fromEntries( methods.map(n => [n, cw[n]]) ));
-
-    cw.log.setLevel( process.env.WORKER_DEBUG_LEVEL || 'error' );
-
-    log.debug("Context.axios is type %s", typeof cw.axios );
-    axios_mock				= new axios_mock_adapter( cw.axios );
     
     await DNS2HASH.put( domain, hash );
     await HASH2CDN.put( hash, JSON.stringify( host_list ) );
@@ -54,19 +50,22 @@ async function setup_for_cloudworker () {
 async function setup_for_service_worker ( staging_url ) {
     global.Request = function Request ( url, config ) {
 	this.url = url;
-	this.config = config;
+	this.config = config || {};
     }
     
     global.handleRequest = async function ( req ) {
 	let response;
 	try {
-	    response			= await axios({
+	    const config		= {
 		"url": staging_url,
 		"method": req.config.method || "GET",
 		"transformResponse": null,
 		"data": req.config.body,
 		"headers": req.config.headers,
-	    });
+	    };
+	    
+	    console.log( config );
+	    response			= await axios( config );
 	} catch ( err ) {
 	    log.error("%s", String(err) );
 	    response			= err.response;
@@ -130,7 +129,11 @@ describe("Worker Test", function() {
     })
 
     it('should fail on missing Host header', async function () {
-	let req				= new Request('https://worker.example.com/');
+	let req				= new Request('https://worker.example.com/', {
+	    "headers": {
+		"Host": null,
+	    }
+	});
 	log.silly("%s", req );
 	
 	let resp			= await handleRequest( req );
@@ -182,11 +185,11 @@ describe("Worker Test", function() {
     it('should send GET / request and recieve HTML', async function () {
 	const html			= `<h1>Hello World!</h1>`;
 	
-	axios_mock.onGet(/.*\.holohost\.net\//).reply( 200, html );
+	mock_fetch.mock(/.*\.holohost\.net\//, html );
 	
 	let req				= new Request('https://worker.example.com/', {
 	    "headers": {
-		"Host": "example.com",
+		"Host": domain,
 	    },
 	});
 	log.silly("%s", req );
