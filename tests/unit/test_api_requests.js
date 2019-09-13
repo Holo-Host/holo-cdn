@@ -129,11 +129,7 @@ describe("Worker Test", function() {
     })
 
     it('should fail on missing Host header', async function () {
-	let req				= new Request('https://worker.example.com/', {
-	    "headers": {
-		"Host": null,
-	    }
-	});
+	let req				= new Request('https://worker.example.com/');
 	log.silly("%s", req );
 	
 	let resp			= await handleRequest( req );
